@@ -1,0 +1,68 @@
+import pandas as pd
+import numpy as np
+import math
+import regex
+#Importing Files
+a_csv = pd.read_csv(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Employees_1.csv')
+b_excel = pd.read_excel(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Employees_2.xls')
+c_csv = pd.read_csv(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Customer_1.csv')
+d_excel = pd.read_excel(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Customer_2.xls')
+#Removing Special Character
+a_csv.PhoneNumber=a_csv.PhoneNumber.replace('[!@#$%^&*_=\][+)-]','',regex=True)
+b_excel.PhoneNumber=b_excel.PhoneNumber.replace('[!@#$%^&*_=\][+)-]','',regex=True)
+c_csv.PhoneNo=c_csv.PhoneNo.replace('[!@#$%^&*_=\][.+)-][a-zA-Z]','',regex=True)
+d_excel.PhoneNo = d_excel.PhoneNo.replace('[%$&*=?+/]','',regex=True)
+#Adding new coulmn
+
+d_excel['FirstName'].fillna("Mr",inplace=True)
+d_excel['LastName'].fillna("",inplace=True)
+d_excel['FullName'] = d_excel["FirstName"].astype(str)+" "+d_excel["LastName"].astype(str)
+
+d_excel
+#Merging Both Employee and Customer File
+Employee = pd.concat([a_csv,b_excel],ignore_index=True,sort=False)
+Customer = pd.concat([c_csv,d_excel],ignore_index=True,sort=False)
+
+Employee
+Customer
+#Importing Cars File
+Cars = pd.read_csv(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Cars.csv')
+#Calculating NewPrice
+Cars['NewPrice']=(Cars['Ex-ShowroomPrice']+Cars['Ex-ShowroomPrice']*0.03)
+
+Cars
+#Adding CarName and ModelName
+Cars[['CarName','NameModel']]=Cars['CarName'].str.split(' ',expand=True)
+Cars['NameModel']=Cars['NameModel'].str.upper()
+
+Cars
+#Importing BookingDetails Files
+
+Bookings = pd.read_excel(r'C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Bookings.xls')
+
+Bookings
+
+#mergingcarandbookingtable
+Merge=pd.merge(Cars,Bookings,how="inner",sort=True)
+
+Merge
+Merge['Amount']=Merge['NewPrice']*1.04
+Merge['BillAmount']=Merge['Amount']
+
+Merge.loc[Merge['NameModel']=="EV",'BillAmount']=Merge['BillAmount']-200000
+Merge.loc[Merge['NameModel']=="XZ",'BillAmount']=Merge['BillAmount']-30000
+Merge.loc[Merge['NameModel']=="XE",'BillAmount']=Merge['BillAmount']-5000
+
+FinalMerge=Merge
+del FinalMerge['Amount']
+
+FinalMerge
+FinalMerge['Date']=pd.to_datetime(FinalMerge['Date']).dt.date
+Customer['PhoneNo']=Customer['PhoneNo'].astype(str)
+Employee['PhoneNumber']=Employee['PhoneNumber'].astype(str)
+Alldone=pd.merge(FinalMerge,Customer,how="inner",on='Bid',sort=True)
+Alldone2=pd.merge(Alldone,Employee,how="inner",left_on='EmployeeId',right_on='EId',sort=True)
+Alldone2.rename(columns={'Bid':'Bookingid','FullName':'CustomerName'},inplace=True)
+Done=Alldone2.filter(['Bookingid','CarName','CustomerName','BillAmount'])
+
+Done.to_excel(r"C:\Users\raghvendra.verma\Capstone\Car Showroom Analysis using python\Input sources\Submission.xlsx",sheet_name='Data',index=False)
